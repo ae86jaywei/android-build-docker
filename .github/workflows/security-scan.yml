@@ -84,7 +84,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           scan-type: 'image'
           image-ref: 'local-build:latest'
@@ -115,7 +115,7 @@ jobs:
 
       - name: Run Trivy configuration scan
         id: trivy-config
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         if: always()
         with:
           scan-type: 'image'
@@ -129,7 +129,7 @@ jobs:
 
       - name: Run Trivy secret scan
         id: trivy-secret
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         if: always()
         with:
           scan-type: 'image'
