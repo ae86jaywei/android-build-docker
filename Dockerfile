@@ -26,7 +26,7 @@ ARG JAVA_VERSION=17
 ARG PYTHON_VERSION=3.12
 ARG ANDROID_SDK_VERSION=34
 ARG ANDROID_NDK_VERSION=r26
-ARG GRADLE_VERSION=8.5
+ARG GRADLE_VERSION=8.10
 
 FROM ubuntu:${UBUNTU_VERSION} AS builder
 
@@ -165,7 +165,7 @@ RUN apt-get update && apt-get install -y \
 
 # 创建工作目录和缓存目录
 RUN mkdir -p /workspace /ccache && \
-    useradd -m -u 1000 builder && \
+    if ! id builder &>/dev/null; then useradd -m builder; fi && \
     chown -R builder:builder /workspace /ccache
 
 # 设置 ccache 配置
