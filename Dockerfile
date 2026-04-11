@@ -30,6 +30,10 @@ ARG GRADLE_VERSION=8.5
 
 FROM ubuntu:${UBUNTU_VERSION} AS builder
 
+# 重新声明构建参数以在 FROM 之后使用
+ARG ANDROID_SDK_VERSION=34
+ARG ANDROID_NDK_VERSION=r26
+
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
@@ -72,11 +76,9 @@ RUN mkdir -p ${ANDROID_HOME}/cmdline-tools/latest && \
 RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
     ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
     "platforms;android-${ANDROID_SDK_VERSION}" \
-    "build-tools;${ANDROID_SDK_VERSION}" \
     "platform-tools" \
     "emulator" \
-    "tools" \
-    "system-images;android-${ANDROID_SDK_VERSION};google_apis;x86_64"
+    "tools"
 
 # 安装 Android NDK
 RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/ndk.zip https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip && \
