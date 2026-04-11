@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y \
 
 # 安装 Android SDK Command-line Tools
 RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
-    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11079833_latest.zip -O /tmp/cmdline-tools.zip && \
+    curl -f -L --retry 5 --retry-delay 10 -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11079833_latest.zip && \
     unzip /tmp/cmdline-tools.zip -d ${ANDROID_HOME}/cmdline-tools && \
     mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest && \
     rm /tmp/cmdline-tools.zip
@@ -78,13 +78,13 @@ RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
     "system-images;android-${ANDROID_SDK_VERSION};google_apis;x86_64"
 
 # 安装 Android NDK
-RUN wget -q https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip -O /tmp/ndk.zip && \
+RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/ndk.zip https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip && \
     unzip /tmp/ndk.zip -d /opt && \
     mv /opt/android-ndk-${ANDROID_NDK_VERSION} ${ANDROID_NDK_HOME} && \
     rm /tmp/ndk.zip
 
 # 安装 Gradle
-RUN wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -O /tmp/gradle.zip && \
+RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip && \
     unzip /tmp/gradle.zip -d /opt && \
     mv /opt/gradle-${GRADLE_VERSION} ${GRADLE_HOME} && \
     rm /tmp/gradle.zip

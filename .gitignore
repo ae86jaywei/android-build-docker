@@ -85,6 +85,9 @@ coverage/
 *.backup
 *.old
 
+# Error logs directory
+错误/
+
 # Compiled source
 *.com
 *.exe
