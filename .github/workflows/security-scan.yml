@@ -46,7 +46,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  TRIVY_VERSION: 0.69.3
+  TRIVY_VERSION: 0.65.0
 
 jobs:
   security-scan:
