@@ -32,7 +32,7 @@ FROM ubuntu:${UBUNTU_VERSION} AS builder
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
-ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_NDK_HOME=/opt/android-ndk
 ENV GRADLE_HOME=/opt/gradle
@@ -41,8 +41,8 @@ ENV PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HO
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
     build-essential \
-    openjdk-${JAVA_VERSION}-jdk \
-    python${PYTHON_VERSION} \
+    openjdk-17-jdk \
+    python3 \
     python3-pip \
     git \
     curl \
@@ -110,14 +110,17 @@ RUN apt-get clean && \
 # 阶段 2: Runtime - 最终运行环境
 # ============================================
 # 构建参数
-ARG UBUNTU_VERSION=24.10
+ARG UBUNTU_VERSION=24.04
 ARG JAVA_VERSION=17
 
 FROM ubuntu:${UBUNTU_VERSION}
 
+# 重新定义构建参数
+ARG JAVA_VERSION
+
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
-ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_NDK_HOME=/opt/android-ndk
 ENV GRADLE_HOME=/opt/gradle
