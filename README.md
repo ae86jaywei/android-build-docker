@@ -14,7 +14,7 @@
 ## 包含的工具
 
 ### 系统工具
-- Ubuntu 24.10 基础系统
+- Ubuntu 24.04 基础系统
 - build-essential, make, ninja-build
 - Git, curl, wget, unzip
 - Python 3.12, pip
@@ -39,7 +39,7 @@
 ### 拉取镜像
 
 ```bash
-docker pull ghcr.io/your-org/android-build:latest
+docker pull ghcr.io/ae86jaywei/android-build:latest
 ```
 
 ### 运行容器
