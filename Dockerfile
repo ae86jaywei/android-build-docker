@@ -100,7 +100,7 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
     chmod a+x /usr/local/bin/repo
 
 # 安装额外的 Python 包
-RUN pip3 install \
+RUN pip3 install --break-system-packages \
     protobuf \
     six \
     future \
