@@ -45,7 +45,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  TRIVY_VERSION: 0.49.1
+  TRIVY_VERSION: 0.69.3
 
 jobs:
   security-scan:
@@ -68,6 +68,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true                      # <<< 把镜像加载到 runner 的 docker daemon，以便后续扫描
           tags: |
             local-build:latest
           build-args: |
@@ -80,16 +81,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Install Trivy
-        run: |
-          # 下载并安装 Trivy
-          wget -qO- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | tar -xz
-          sudo mv trivy /usr/local/bin/
-          trivy --version
+      # 不再手动 wget/tar 安装 Trivy（使用下方的 trivy-action）
+      # - name: Install Trivy
+      #   ...
 
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.69.3
         with:
           image-ref: 'local-build:latest'
           format: 'sarif'
@@ -101,29 +99,38 @@ jobs:
           scanners: 'vuln'
           timeout: '10m'
 
+      - name: Check for SARIF file
+        id: check-sarif
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Trivy scan results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: steps.check-sarif.outputs.sarif_exists == 'true'
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'container-security'
 
       - name: Run Trivy configuration scan
         id: trivy-config
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.69.3
         if: always()
         with:
           image-ref: 'local-build:latest'
           format: 'table'
           output: 'trivy-config.txt'
-          scanners: 'config'
+          scanners: 'misconfig'           # 使用 misconfig 替代已弃用的 config
           severity: 'CRITICAL,HIGH'
           exit-code: '0'
           timeout: '5m'
 
       - name: Run Trivy secret scan
         id: trivy-secret
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.69.3
         if: always()
         with:
           image-ref: 'local-build:latest'
@@ -144,30 +151,25 @@ jobs:
           echo "Exit Code: ${{ github.event.inputs.exit_code || '1' }}"
           echo "============================"
           
-          # 显示漏洞扫描结果摘要
           if [ -f "trivy-results.sarif" ]; then
             echo "Vulnerability scan completed."
-            # 可以添加更多分析逻辑
           else
             echo "No vulnerability scan results found."
           fi
           
-          # 显示配置扫描结果
           if [ -f "trivy-config.txt" ]; then
             echo "Configuration scan results:"
-            cat trivy-config.txt | head -20
+            head -20 trivy-config.txt || true
           fi
           
-          # 显示密钥扫描结果
           if [ -f "trivy-secret.txt" ]; then
             echo "Secret scan results:"
-            cat trivy-secret.txt | head -20
+            head -20 trivy-secret.txt || true
           fi
 
       - name: Generate security report
         if: always()
         run: |
-          # 生成安全报告
           echo "# Security Scan Report" > security-report.md
           echo "" >> security-report.md
           echo "## Scan Details" >> security-report.md
@@ -177,14 +179,12 @@ jobs:
           echo "- **Severity Level**: ${{ github.event.inputs.severity || 'CRITICAL,HIGH' }}" >> security-report.md
           echo "" >> security-report.md
           
-          # 添加漏洞统计
           if [ -f "trivy-results.sarif" ]; then
             echo "## Vulnerability Statistics" >> security-report.md
             echo "Vulnerability scan completed. Results uploaded to GitHub Security." >> security-report.md
             echo "" >> security-report.md
           fi
           
-          # 添加配置问题
           if [ -f "trivy-config.txt" ] && [ -s "trivy-config.txt" ]; then
             echo "## Configuration Issues" >> security-report.md
             echo '```' >> security-report.md
@@ -193,7 +193,6 @@ jobs:
             echo "" >> security-report.md
           fi
           
-          # 添加密钥检测结果
           if [ -f "trivy-secret.txt" ] && [ -s "trivy-secret.txt" ]; then
             echo "## Secret Detection" >> security-report.md
             echo '```' >> security-report.md
@@ -235,10 +234,7 @@ jobs:
       - name: Clean up
         if: always()
         run: |
-          # 清理临时镜像
           docker rmi local-build:latest 2>/dev/null || true
-          
-          # 清理临时文件
           rm -f trivy-results.sarif trivy-config.txt trivy-secret.txt security-report.md 2>/dev/null || true
 
   dependency-check:
@@ -256,14 +252,12 @@ jobs:
 
       - name: Install dependency check tools
         run: |
-          # 安装安全扫描工具
           pip install safety bandit
 
       - name: Check Python dependencies
         run: |
           echo "=== Python Dependency Security Check ==="
           
-          # 检查 requirements.txt 如果存在
           if [ -f "requirements.txt" ]; then
             echo "Checking requirements.txt..."
             safety check -r requirements.txt --json 2>/dev/null || safety check -r requirements.txt 2>/dev/null || echo "No issues found or safety check failed"
@@ -271,7 +265,6 @@ jobs:
             echo "No requirements.txt found"
           fi
           
-          # 检查 Python 代码安全
           echo ""
           echo "=== Python Code Security Check ==="
           if [ -d "scripts" ]; then
@@ -284,40 +277,36 @@ jobs:
         run: |
           echo "=== Shell Script Security Check ==="
           
-          # 安装 shellcheck 如果可用
           if command -v shellcheck &> /dev/null; then
             echo "Checking shell scripts with shellcheck..."
-            find scripts/ -name "*.sh" -type f -exec shellcheck {} \; 2>/dev/null || echo "Shellcheck completed"
+            find scripts/ -name \"*.sh\" -type f -exec shellcheck {} \; 2>/dev/null || echo "Shellcheck completed"
           else
             echo "Shellcheck not installed, skipping..."
           fi
           
-          # 基本脚本检查
           echo ""
           echo "=== Basic Script Checks ==="
           for script in scripts/*.sh; do
-            if [ -f "$script" ]; then
+            if [ -f \"$script\" ]; then
               echo "Checking $script..."
-              # 检查 shebang
-              head -1 "$script" | grep -q "^#!/bin/bash" && echo "  ✓ Has bash shebang" || echo "  ⚠️  Missing or incorrect shebang"
-              # 检查执行权限
-              [ -x "$script" ] && echo "  ✓ Is executable" || echo "  ⚠️  Not executable"
+              head -1 \"$script\" | grep -q \"^#!/bin/bash\" && echo \"  ✓ Has bash shebang\" || echo \"  ⚠️  Missing or incorrect shebang\"
+              [ -x \"$script\" ] && echo \"  ✓ Is executable\" || echo \"  ⚠️  Not executable\"
             fi
           done
 
       - name: Generate dependency report
         run: |
-          echo "# Dependency Security Report" > dependency-report.md
-          echo "" >> dependency-report.md
-          echo "## Scan Details" >> dependency-report.md
-          echo "- **Scan Date**: $(date)" >> dependency-report.md
-          echo "- **Repository**: ${{ github.repository }}" >> dependency-report.md
-          echo "" >> dependency-report.md
-          echo "## Recommendations" >> dependency-report.md
-          echo "1. Regularly update dependencies to latest secure versions" >> dependency-report.md
-          echo "2. Use dependency vulnerability scanning in CI/CD" >> dependency-report.md
-          echo "3. Review and fix security issues in shell scripts" >> dependency-report.md
-          echo "4. Use signed and verified base images" >> dependency-report.md
+          echo \"# Dependency Security Report\" > dependency-report.md
+          echo \"\" >> dependency-report.md
+          echo \"## Scan Details\" >> dependency-report.md
+          echo \"- **Scan Date**: $(date)\" >> dependency-report.md
+          echo \"- **Repository**: ${{ github.repository }}\" >> dependency-report.md
+          echo \"\" >> dependency-report.md
+          echo \"## Recommendations\" >> dependency-report.md
+          echo \"1. Regularly update dependencies to latest secure versions\" >> dependency-report.md
+          echo \"2. Use dependency vulnerability scanning in CI/CD\" >> dependency-report.md
+          echo \"3. Review and fix security issues in shell scripts\" >> dependency-report.md
+          echo \"4. Use signed and verified base images\" >> dependency-report.md
 
       - name: Upload dependency report
         uses: actions/upload-artifact@v4
