@@ -24,17 +24,17 @@ on:
       enable_cache:
         description: '启用编译缓存'
         required: false
-        default: 'true'
+        default: true
         type: boolean
       clean_build:
         description: '清理构建'
         required: false
-        default: 'false'
+        default: false
         type: boolean
       upload_artifacts:
         description: '上传构建产物'
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 env:
@@ -75,7 +75,7 @@ jobs:
           echo "========================="
 
       - name: Restore ccache cache
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         uses: actions/cache@v3
         with:
           path: /ccache
@@ -84,7 +84,7 @@ jobs:
             ${{ runner.os }}-ccache-
 
       - name: Restore Gradle cache
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
@@ -93,7 +93,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Setup ccache
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         run: |
           # 配置 ccache
           ccache -M 50G
@@ -107,7 +107,7 @@ jobs:
           ./scripts/verify-env.sh
 
       - name: Clean build directory
-        if: ${{ github.event.inputs.clean_build == 'true' }}
+        if: ${{ github.event.inputs.clean_build }}
         run: |
           echo "Cleaning build directory..."
           rm -rf build/ out/ app/build/ .gradle/
@@ -304,21 +304,21 @@ jobs:
           echo "✅ AOSP build environment is ready!"
 
       - name: Save ccache cache
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         uses: actions/cache@v3
         with:
           path: /ccache
           key: ${{ runner.os }}-ccache-${{ hashFiles('**') }}
 
       - name: Save Gradle cache
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: Upload build artifacts
-        if: ${{ github.event.inputs.upload_artifacts == 'true' && github.event.inputs.build_type == 'app' }}
+        if: ${{ github.event.inputs.upload_artifacts && github.event.inputs.build_type == 'app' }}
         uses: actions/upload-artifact@v4
         with:
           name: android-build-artifacts
@@ -329,7 +329,7 @@ jobs:
           retention-days: 7
 
       - name: Show ccache statistics
-        if: ${{ github.event.inputs.enable_cache == 'true' }}
+        if: ${{ github.event.inputs.enable_cache }}
         run: |
           echo "=== ccache Statistics ==="
           ccache -s
