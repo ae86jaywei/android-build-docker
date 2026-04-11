@@ -20,8 +20,6 @@
 # ============================================
 # 阶段 1: Builder - 安装所有构建工具
 # ============================================
-FROM ubuntu:24.10 AS builder
-
 # 构建参数
 ARG UBUNTU_VERSION=24.10
 ARG JAVA_VERSION=17
@@ -29,6 +27,8 @@ ARG PYTHON_VERSION=3.12
 ARG ANDROID_SDK_VERSION=34
 ARG ANDROID_NDK_VERSION=r26
 ARG GRADLE_VERSION=8.5
+
+FROM ubuntu:${UBUNTU_VERSION} AS builder
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
@@ -109,10 +109,11 @@ RUN apt-get clean && \
 # ============================================
 # 阶段 2: Runtime - 最终运行环境
 # ============================================
-FROM ubuntu:${UBUNTU_VERSION}
-
 # 构建参数
+ARG UBUNTU_VERSION=24.10
 ARG JAVA_VERSION=17
+
+FROM ubuntu:${UBUNTU_VERSION}
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
