@@ -170,7 +170,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 LABEL maintainer="Android Build Team"
 LABEL version="1.0.0"
 LABEL description="Docker image for Android system and application compilation"
-LABEL org.opencontainers.image.source="https://github.com/your-org/android-build-docker"
+LABEL org.opencontainers.image.source="https://github.com/ae86jaywei/android-build-docker"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 # 默认命令
