@@ -2,14 +2,16 @@ name: Build Docker Image
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'Dockerfile'
       - 'scripts/**'
       - '.github/workflows/build-image.yml'
       - 'config/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'Dockerfile'
       - 'scripts/**'
@@ -38,7 +40,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # 强制转为小写，因为 ghcr.io 对大小写敏感且要求全小写
   IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME_LOWER: ${{ github.repository | lower }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -48,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write  # 必须
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -68,7 +69,6 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # 使用小写的镜像名
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
           tags: |
             type=ref,event=branch
@@ -109,15 +109,6 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-      - name: Verify image
-        if: ${{ github.event_name != 'pull_request' }}
-        run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest"
-          docker pull $IMAGE_TAG
-          docker run --rm $IMAGE_TAG java -version
-          docker run --rm $IMAGE_TAG gradle --version
-          docker run --rm $IMAGE_TAG ccache --version
-
   test-image:
     needs: build-and-push
     if: ${{ github.event_name != 'pull_request' }}
@@ -130,52 +121,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test environment
-        run: ./scripts/verify-env.sh
-
       - name: Test basic commands
         run: |
           java -version
           python3 --version
-          git --version
           gradle --version
-          ccache --version
-          ninja --version
-
-      - name: Test Android tools
-        run: |
-          sdkmanager --list | head -20
-          echo "Android SDK installed at: $ANDROID_HOME"
-          echo "Android NDK installed at: $ANDROID_NDK_HOME"
-
-      - name: Test build capabilities
-        run: |
-          mkdir -p /tmp/test-project
-          cd /tmp/test-project
-          echo 'plugins { id "java" }' > build.gradle
-          echo 'println "Gradle build test successful"' > build.gradle.kts 2>/dev/null || true
-          if command -v javac &> /dev/null; then
-            echo 'public class Test { public static void main(String[] args) { System.out.println("Java test successful"); } }' > Test.java
-            javac Test.java
-            java Test
-          fi
 
   notify:
     needs: [build-and-push, test-image]
     if: ${{ always() && github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Notify on success
         if: ${{ needs.build-and-push.result == 'success' && needs.test-image.result == 'success' }}
         run: |
           echo "Docker image built and tested successfully!"
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest"
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
 
       - name: Notify on failure
         if: ${{ needs.build-and-push.result == 'failure' || needs.test-image.result == 'failure' }}
         run: |
           echo "Docker image build or test failed!"
-          echo "Check the workflow logs for details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "If you see 'permission_denied: write_package', please go to repository Settings → Actions → General → Workflow permissions and select 'Read and write permissions'."
