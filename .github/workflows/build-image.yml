@@ -16,24 +16,23 @@ on:
       - '.github/workflows/build-image.yml'
       - 'config/**'
   schedule:
-    # 每周日凌晨2点运行
-    - cron: '0 2 * * 0'
+    # ??    - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       tag:
-        description: '镜像标签'
+        description: ''
         required: false
         default: 'latest'
       android_version:
-        description: 'Android SDK 版本'
+        description: 'Android SDK '
         required: false
         default: '34'
       ndk_version:
-        description: 'Android NDK 版本'
+        description: 'Android NDK '
         required: false
         default: 'r26'
       gradle_version:
-        description: 'Gradle 版本'
+        description: 'Gradle '
         required: false
         default: '8.5'
 
@@ -109,11 +108,10 @@ jobs:
       - name: Verify image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          # 拉取并验证镜像
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          # ?          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           docker pull $IMAGE_TAG
           
-          # 运行基本验证
+          # 
           docker run --rm $IMAGE_TAG java -version
           docker run --rm $IMAGE_TAG gradle --version
           docker run --rm $IMAGE_TAG ccache --version
@@ -132,12 +130,12 @@ jobs:
 
       - name: Test environment
         run: |
-          # 运行环境验证脚本
+          # 
           ./scripts/verify-env.sh
 
       - name: Test basic commands
         run: |
-          # 测试基本命令
+          # 
           java -version
           python3 --version
           git --version
@@ -147,22 +145,22 @@ jobs:
 
       - name: Test Android tools
         run: |
-          # 测试 Android 工具
+          #  Android 
           sdkmanager --list | head -20
           echo "Android SDK installed at: $ANDROID_HOME"
           echo "Android NDK installed at: $ANDROID_NDK_HOME"
 
       - name: Test build capabilities
         run: |
-          # 创建简单的测试项目
+          # 
           mkdir -p /tmp/test-project
           cd /tmp/test-project
           
-          # 测试 Gradle 构建
+          #  Gradle 
           echo 'plugins { id "java" }' > build.gradle
           echo 'println "Gradle build test successful"' > build.gradle.kts 2>/dev/null || true
           
-          # 测试编译
+          # 
           if command -v javac &> /dev/null; then
             echo 'public class Test { public static void main(String[] args) { System.out.println("Java test successful"); } }' > Test.java
             javac Test.java
@@ -178,12 +176,12 @@ jobs:
       - name: Notify on success
         if: ${{ needs.build-and-push.result == 'success' && needs.test-image.result == 'success' }}
         run: |
-          echo "✅ Docker image built and tested successfully!"
+          echo "?Docker image built and tested successfully!"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "Tags: ${{ steps.meta.outputs.tags }}"
 
       - name: Notify on failure
         if: ${{ needs.build-and-push.result == 'failure' || needs.test-image.result == 'failure' }}
         run: |
-          echo "❌ Docker image build or test failed!"
+          echo "?Docker image build or test failed!"
           echo "Check the workflow logs for details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

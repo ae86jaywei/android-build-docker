@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       android_version:
-        description: 'Android 版本'
+        description: 'Android '
         required: true
         default: '14'
         type: choice
@@ -14,7 +14,7 @@ on:
           - '14'
           - '15'
       build_type:
-        description: '编译类型'
+        description: ''
         required: true
         default: 'app'
         type: choice
@@ -22,17 +22,17 @@ on:
           - 'app'
           - 'system'
       enable_cache:
-        description: '启用编译缓存'
+        description: ''
         required: false
         default: true
         type: boolean
       clean_build:
-        description: '清理构建'
+        description: ''
         required: false
         default: false
         type: boolean
       upload_artifacts:
-        description: '上传构建产物'
+        description: ''
         required: false
         default: true
         type: boolean
@@ -60,13 +60,13 @@ jobs:
 
       - name: Setup environment
         run: |
-          # 设置环境变量
+          # 
           echo "ANDROID_VERSION=${{ github.event.inputs.android_version }}" >> $GITHUB_ENV
           echo "BUILD_TYPE=${{ github.event.inputs.build_type }}" >> $GITHUB_ENV
           echo "ENABLE_CACHE=${{ github.event.inputs.enable_cache }}" >> $GITHUB_ENV
           echo "CLEAN_BUILD=${{ github.event.inputs.clean_build }}" >> $GITHUB_ENV
           
-          # 显示环境信息
+          # 
           echo "=== Build Environment ==="
           echo "Android Version: ${{ github.event.inputs.android_version }}"
           echo "Build Type: ${{ github.event.inputs.build_type }}"
@@ -95,7 +95,7 @@ jobs:
       - name: Setup ccache
         if: ${{ github.event.inputs.enable_cache }}
         run: |
-          # 配置 ccache
+          #  ccache
           ccache -M 50G
           ccache -o compression=true
           ccache -o compression_level=6
@@ -103,7 +103,7 @@ jobs:
 
       - name: Verify build environment
         run: |
-          # 验证环境
+          # 
           ./scripts/verify-env.sh
 
       - name: Clean build directory
@@ -118,16 +118,15 @@ jobs:
         run: |
           echo "Building Android Application for Android ${{ github.event.inputs.android_version }}..."
           
-          # 创建示例 Android 项目（如果不存在）
-          if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
+          #  Android ?          if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
             echo "Creating sample Android project..."
             
-            # 创建项目结构
+            # 
             mkdir -p app/src/main/java/com/example/app
             mkdir -p app/src/main/res/layout
             mkdir -p app/src/main/res/values
             
-            # 创建 build.gradle 文件
+            #  build.gradle 
             cat > build.gradle << 'EOF'
             // Top-level build file
             buildscript {
@@ -152,7 +151,7 @@ jobs:
             }
             EOF
             
-            # 创建 app/build.gradle 文件
+            #  app/build.gradle 
             cat > app/build.gradle << 'EOF'
             plugins {
                 id 'com.android.application'
@@ -189,7 +188,7 @@ jobs:
             }
             EOF
             
-            # 创建 MainActivity
+            #  MainActivity
             cat > app/src/main/java/com/example/app/MainActivity.java << 'EOF'
             package com.example.app;
             
@@ -205,7 +204,7 @@ jobs:
             }
             EOF
             
-            # 创建布局文件
+            # 
             cat > app/src/main/res/layout/activity_main.xml << 'EOF'
             <?xml version="1.0" encoding="utf-8"?>
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -228,14 +227,14 @@ jobs:
             </androidx.constraintlayout.widget.ConstraintLayout>
             EOF
             
-            # 创建 strings.xml
+            #  strings.xml
             cat > app/src/main/res/values/strings.xml << 'EOF'
             <resources>
                 <string name="app_name">Android Build Test</string>
             </resources>
             EOF
             
-            # 创建 AndroidManifest.xml
+            #  AndroidManifest.xml
             cat > app/src/main/AndroidManifest.xml << 'EOF'
             <?xml version="1.0" encoding="utf-8"?>
             <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -261,7 +260,7 @@ jobs:
             EOF
           fi
           
-          # 构建 APK
+          #  APK
           echo "Building APK..."
           chmod +x gradlew 2>/dev/null || ./gradlew wrapper 2>/dev/null || true
           
@@ -271,12 +270,11 @@ jobs:
             gradle assembleDebug --no-daemon --console=plain
           fi
           
-          # 检查构建结果
-          if [ -d "app/build/outputs/apk" ]; then
-            echo "✅ APK built successfully!"
+          # ?          if [ -d "app/build/outputs/apk" ]; then
+            echo "?APK built successfully!"
             find app/build/outputs/apk -name "*.apk" | head -5
           else
-            echo "⚠️  No APK found in app/build/outputs/apk"
+            echo "  No APK found in app/build/outputs/apk"
           fi
 
       - name: Build Android System (AOSP)
@@ -284,8 +282,7 @@ jobs:
         run: |
           echo "Building Android System (AOSP) for Android ${{ github.event.inputs.android_version }}..."
           
-          # 注意：完整的 AOSP 构建需要下载大量源码
-          # 这里只进行环境验证和模拟构建
+          #  AOSP ?          # 
           echo "This would build Android ${{ github.event.inputs.android_version }} AOSP"
           echo "For full AOSP build, you need to sync the source code first:"
           echo "  repo init -u https://android.googlesource.com/platform/manifest -b android-${{ github.event.inputs.android_version }}.0_r1"
@@ -294,14 +291,14 @@ jobs:
           echo "  lunch aosp_arm-eng"
           echo "  make -j\$(nproc)"
           
-          # 验证构建环境
+          # 
           echo "Verifying AOSP build environment..."
           which make && make --version
           which ninja && ninja --version
           which java && java -version
           which python3 && python3 --version
           
-          echo "✅ AOSP build environment is ready!"
+          echo "?AOSP build environment is ready!"
 
       - name: Save ccache cache
         if: ${{ github.event.inputs.enable_cache }}
@@ -345,9 +342,9 @@ jobs:
           echo "Status: ${{ job.status }}"
           echo "====================="
           
-          # 显示构建时间
+          # 
           echo "Build completed at: $(date)"
           
-          # 显示磁盘使用情况
+          # 
           echo "Disk usage:"
           df -h /ccache ~/.gradle 2>/dev/null || true
