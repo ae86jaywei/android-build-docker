@@ -2,19 +2,20 @@ name: Security Scan
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'Dockerfile'
       - 'scripts/**'
       - '.github/workflows/security-scan.yml'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'Dockerfile'
       - 'scripts/**'
       - '.github/workflows/security-scan.yml'
   schedule:
-    # 每周一凌晨3点运行
     - cron: '0 3 * * 1'
   workflow_dispatch:
     inputs:
@@ -68,7 +69,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
-          load: true                      # <<< 把镜像加载到 runner 的 docker daemon，以便后续扫描
+          load: true
           tags: |
             local-build:latest
           build-args: |
@@ -77,18 +78,15 @@ jobs:
             PYTHON_VERSION=3.12
             ANDROID_SDK_VERSION=34
             ANDROID_NDK_VERSION=r26
-            GRADLE_VERSION=8.5
+            GRADLE_VERSION=8.10
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 不再手动 wget/tar 安装 Trivy（使用下方的 trivy-action）
-      # - name: Install Trivy
-      #   ...
-
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
-        uses: aquasecurity/trivy-action@v0.69.3
+        uses: aquasecurity/trivy-action@0.33.1
         with:
+          scan-type: 'image'
           image-ref: 'local-build:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
@@ -117,22 +115,24 @@ jobs:
 
       - name: Run Trivy configuration scan
         id: trivy-config
-        uses: aquasecurity/trivy-action@v0.69.3
+        uses: aquasecurity/trivy-action@0.33.1
         if: always()
         with:
+          scan-type: 'image'
           image-ref: 'local-build:latest'
           format: 'table'
           output: 'trivy-config.txt'
-          scanners: 'misconfig'           # 使用 misconfig 替代已弃用的 config
+          scanners: 'misconfig'
           severity: 'CRITICAL,HIGH'
           exit-code: '0'
           timeout: '5m'
 
       - name: Run Trivy secret scan
         id: trivy-secret
-        uses: aquasecurity/trivy-action@v0.69.3
+        uses: aquasecurity/trivy-action@0.33.1
         if: always()
         with:
+          scan-type: 'image'
           image-ref: 'local-build:latest'
           format: 'table'
           output: 'trivy-secret.txt'
@@ -279,7 +279,7 @@ jobs:
           
           if command -v shellcheck &> /dev/null; then
             echo "Checking shell scripts with shellcheck..."
-            find scripts/ -name \"*.sh\" -type f -exec shellcheck {} \; 2>/dev/null || echo "Shellcheck completed"
+            find scripts/ -name "*.sh" -type f -exec shellcheck {} \; 2>/dev/null || echo "Shellcheck completed"
           else
             echo "Shellcheck not installed, skipping..."
           fi
@@ -287,26 +287,26 @@ jobs:
           echo ""
           echo "=== Basic Script Checks ==="
           for script in scripts/*.sh; do
-            if [ -f \"$script\" ]; then
+            if [ -f "$script" ]; then
               echo "Checking $script..."
-              head -1 \"$script\" | grep -q \"^#!/bin/bash\" && echo \"  ✓ Has bash shebang\" || echo \"  ⚠️  Missing or incorrect shebang\"
-              [ -x \"$script\" ] && echo \"  ✓ Is executable\" || echo \"  ⚠️  Not executable\"
+              head -1 "$script" | grep -q "^#!/bin/bash" && echo "  ✓ Has bash shebang" || echo "  ⚠️  Missing or incorrect shebang"
+              [ -x "$script" ] && echo "  ✓ Is executable" || echo "  ⚠️  Not executable"
             fi
           done
 
       - name: Generate dependency report
         run: |
-          echo \"# Dependency Security Report\" > dependency-report.md
-          echo \"\" >> dependency-report.md
-          echo \"## Scan Details\" >> dependency-report.md
-          echo \"- **Scan Date**: $(date)\" >> dependency-report.md
-          echo \"- **Repository**: ${{ github.repository }}\" >> dependency-report.md
-          echo \"\" >> dependency-report.md
-          echo \"## Recommendations\" >> dependency-report.md
-          echo \"1. Regularly update dependencies to latest secure versions\" >> dependency-report.md
-          echo \"2. Use dependency vulnerability scanning in CI/CD\" >> dependency-report.md
-          echo \"3. Review and fix security issues in shell scripts\" >> dependency-report.md
-          echo \"4. Use signed and verified base images\" >> dependency-report.md
+          echo "# Dependency Security Report" > dependency-report.md
+          echo "" >> dependency-report.md
+          echo "## Scan Details" >> dependency-report.md
+          echo "- **Scan Date**: $(date)" >> dependency-report.md
+          echo "- **Repository**: ${{ github.repository }}" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "## Recommendations" >> dependency-report.md
+          echo "1. Regularly update dependencies to latest secure versions" >> dependency-report.md
+          echo "2. Use dependency vulnerability scanning in CI/CD" >> dependency-report.md
+          echo "3. Review and fix security issues in shell scripts" >> dependency-report.md
+          echo "4. Use signed and verified base images" >> dependency-report.md
 
       - name: Upload dependency report
         uses: actions/upload-artifact@v4
