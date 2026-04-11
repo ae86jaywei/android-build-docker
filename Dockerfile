@@ -161,6 +161,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     ca-certificates \
+    ccache \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建工作目录和缓存目录
