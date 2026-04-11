@@ -47,6 +47,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   TRIVY_VERSION: 0.65.0
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   security-scan:
@@ -84,7 +85,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@v0.20.0
         with:
           scan-type: 'image'
           image-ref: 'local-build:latest'
@@ -115,7 +116,7 @@ jobs:
 
       - name: Run Trivy configuration scan
         id: trivy-config
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@v0.20.0
         if: always()
         with:
           scan-type: 'image'
@@ -129,7 +130,7 @@ jobs:
 
       - name: Run Trivy secret scan
         id: trivy-secret
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@v0.20.0
         if: always()
         with:
           scan-type: 'image'
