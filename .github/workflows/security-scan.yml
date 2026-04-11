@@ -31,7 +31,7 @@ on:
       ignore_unfixed:
         description: '忽略未修复的漏洞'
         required: false
-        default: 'true'
+        default: true
         type: boolean
       exit_code:
         description: '发现漏洞时退出码'
@@ -87,9 +87,9 @@ jobs:
           image-ref: 'local-build:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: '${{ github.event.inputs.severity || ''CRITICAL,HIGH'' }}'
-          ignore-unfixed: ${{ github.event.inputs.ignore_unfixed || 'true' }}
-          exit-code: '${{ github.event.inputs.exit_code || ''1'' }}'
+          severity: ${{ github.event.inputs.severity || 'CRITICAL,HIGH' }}
+          ignore-unfixed: ${{ github.event.inputs.ignore_unfixed || true }}
+          exit-code: ${{ github.event.inputs.exit_code || '1' }}
           vuln-type: 'os,library'
           scanners: 'vuln'
           timeout: '10m'
@@ -133,7 +133,7 @@ jobs:
           echo "Image: local-build:latest"
           echo "Trivy Version: $TRIVY_VERSION"
           echo "Severity Level: ${{ github.event.inputs.severity || 'CRITICAL,HIGH' }}"
-          echo "Ignore Unfixed: ${{ github.event.inputs.ignore_unfixed || 'true' }}"
+          echo "Ignore Unfixed: ${{ github.event.inputs.ignore_unfixed || true }}"
           echo "Exit Code: ${{ github.event.inputs.exit_code || '1' }}"
           echo "============================"
           
