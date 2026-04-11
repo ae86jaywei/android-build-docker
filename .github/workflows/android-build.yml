@@ -79,7 +79,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**') }}
+          key: ${{ runner.os }}-ccache-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-ccache-
 
@@ -308,7 +308,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**') }}
+          key: ${{ runner.os }}-ccache-${{ github.run_id }}
 
       - name: Save Gradle cache
         if: ${{ github.event.inputs.enable_cache }}

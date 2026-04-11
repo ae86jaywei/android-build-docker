@@ -3,10 +3,10 @@
 # ============================================
 # 
 # 这是一个用于 Android 系统和应用程序编译的 Docker 镜像。
-# 基于 Ubuntu 24.10，包含完整的 Android 编译工具链。
+# 基于 Ubuntu 24.04，包含完整的 Android 编译工具链。
 #
 # 构建参数:
-#   UBUNTU_VERSION: Ubuntu 版本 (默认: 24.10)
+#   UBUNTU_VERSION: Ubuntu 版本 (默认: 24.04)
 #   JAVA_VERSION: Java 版本 (默认: 17)
 #   PYTHON_VERSION: Python 版本 (默认: 3.12)
 #   ANDROID_SDK_VERSION: Android SDK 版本 (默认: 34)
@@ -102,6 +102,9 @@ RUN pip3 install \
     colorama \
     requests
 
+# 保存 Python 版本信息供后续阶段使用
+RUN python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" > /python_version.txt
+
 # 清理临时文件
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -137,6 +140,8 @@ COPY --from=builder /opt/gradle /opt/gradle
 COPY --from=builder /usr/local/bin/repo /usr/local/bin/repo
 COPY --from=builder /usr/bin/ccache /usr/bin/ccache
 COPY --from=builder /usr/bin/ninja /usr/bin/ninja
+COPY --from=builder /python_version.txt /python_version.txt
+# 动态复制 Python 文件
 COPY --from=builder /usr/lib/python3.12 /usr/lib/python3.12
 COPY --from=builder /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
 
