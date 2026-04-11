@@ -1,0 +1,104 @@
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+out/
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Local config files
+config/*.local
+config/*.dev
+config/*.test
+
+# Cache directories
+.cache/
+.ccache/
+.gradle/
+.android/
+
+# Docker build cache
+.docker/
+
+# Local test files
+test-output/
+coverage/
+
+# Secrets
+*.env
+*.secret
+*.key
+*.pem
+*.crt
+
+# Large files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Compiled source
+*.com
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore all .md files except README.md
+*.md
+!README.md
+!LICENSE.md
+
+# Ignore all .yml files except in .github/workflows
+*.yml
+!/.github/workflows/*.yml
+*.yaml
+!/.github/workflows/*.yaml
