@@ -25,7 +25,7 @@ ENV GRADLE_HOME=/opt/gradle
 ENV PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${GRADLE_HOME}/bin:/usr/local/bin:${PATH}"
 
 # 安装系统依赖（用于构建阶段）
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     openjdk-17-jdk \
     python3 \
@@ -120,7 +120,7 @@ ENV CCACHE_EXEC=/usr/bin/ccache
 ENV PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${GRADLE_HOME}/bin:/usr/local/bin:${PATH}"
 
 # 在 final 镜像中安装运行时依赖与 OpenJDK（避免复制 JDK 导致缺失配置）
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     openjdk-17-jdk-headless \
     git \
     python3 \
