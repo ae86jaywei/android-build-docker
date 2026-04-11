@@ -4,7 +4,7 @@
 
 ## 特性
 
-- 🐳 **基于 Ubuntu 24.10** - 最新的 Ubuntu 版本，提供最新的工具链
+- 🐳 **基于 Ubuntu 24.04** - 最新的 Ubuntu 版本，提供最新的工具链
 - 🔧 **完整的 Android 编译工具链** - 包含 AOSP 和 Android 应用编译所需的所有工具
 - 🚀 **多阶段构建优化** - 分离构建环境和运行时环境，优化镜像体积
 - 🔄 **GitHub Actions 集成** - 支持自动化构建和编译工作流
@@ -14,15 +14,18 @@
 ## 包含的工具
 
 ### 系统工具
+
 - Ubuntu 24.04 基础系统
 - build-essential, make, ninja-build
 - Git, curl, wget, unzip
 - Python 3.12, pip
 
 ### Java 环境
+
 - OpenJDK 17
 
 ### Android 工具链
+
 - Android SDK Command-line Tools
 - Android SDK Platform 34
 - Android SDK Build-Tools 34
@@ -31,6 +34,7 @@
 - repo 工具
 
 ### 构建工具
+
 - Gradle 8.5
 - ccache 4.x
 
@@ -48,7 +52,7 @@ docker pull ghcr.io/ae86jaywei/android-build:latest
 docker run -it --rm \
   -v $(pwd):/workspace \
   -v ccache-data:/ccache \
-  ghcr.io/your-org/android-build:latest \
+  ghcr.io/ae86jay/android-build:latest \
   /bin/bash
 ```
 
@@ -113,6 +117,7 @@ make -j$(nproc)
 ### Android 编译工作流
 
 使用该镜像执行 Android 编译任务，支持自定义参数：
+
 - Android 版本
 - 编译类型（系统/应用）
 - 是否启用缓存
@@ -121,21 +126,21 @@ make -j$(nproc)
 
 ### 环境变量
 
-| 变量名 | 默认值 | 描述 |
-|--------|--------|------|
-| `JAVA_HOME` | `/usr/lib/jvm/java-17-openjdk-amd64` | Java 安装目录 |
-| `ANDROID_HOME` | `/opt/android-sdk` | Android SDK 目录 |
-| `ANDROID_NDK_HOME` | `/opt/android-ndk` | Android NDK 目录 |
-| `GRADLE_HOME` | `/opt/gradle` | Gradle 安装目录 |
-| `CCACHE_DIR` | `/ccache` | ccache 缓存目录 |
-| `PATH` | 包含所有工具路径 | 系统 PATH |
+| 变量名                | 默认值                                  | 描述             |
+| ------------------ | ------------------------------------ | -------------- |
+| `JAVA_HOME`        | `/usr/lib/jvm/java-17-openjdk-amd64` | Java 安装目录      |
+| `ANDROID_HOME`     | `/opt/android-sdk`                   | Android SDK 目录 |
+| `ANDROID_NDK_HOME` | `/opt/android-ndk`                   | Android NDK 目录 |
+| `GRADLE_HOME`      | `/opt/gradle`                        | Gradle 安装目录    |
+| `CCACHE_DIR`       | `/ccache`                            | ccache 缓存目录    |
+| `PATH`             | 包含所有工具路径                             | 系统 PATH        |
 
 ### 构建参数
 
 构建镜像时可自定义以下参数：
 
 ```dockerfile
-ARG UBUNTU_VERSION=24.10
+ARG UBUNTU_VERSION=24.04
 ARG JAVA_VERSION=17
 ARG PYTHON_VERSION=3.12
 ARG ANDROID_SDK_VERSION=34
@@ -209,8 +214,9 @@ android-build-docker/
 
 ## 版本历史
 
-- v1.0.0 (2025-04-10): 初始版本发布
-  - 基于 Ubuntu 24.10
+- v1.0.0 (2026-04-10): 初始版本发布
+  - 基于 Ubuntu 24.04
   - 支持 Android 12+ 编译
   - 集成 GitHub Actions
   - 支持 ccache 编译缓存
+
