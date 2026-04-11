@@ -61,11 +61,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Android SDK Command-line Tools
-RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
-    curl -f -L --retry 5 --retry-delay 10 -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11079833_latest.zip && \
-    unzip /tmp/cmdline-tools.zip -d ${ANDROID_HOME}/cmdline-tools && \
-    mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest && \
-    rm /tmp/cmdline-tools.zip
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools/latest && \
+    curl -f -L --retry 5 --retry-delay 10 -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11079833_latest.zip || \
+    curl -f -L --retry 5 --retry-delay 10 -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip && \
+    unzip /tmp/cmdline-tools.zip -d /tmp/cmdline-tools-tmp && \
+    mv /tmp/cmdline-tools-tmp/cmdline-tools/* ${ANDROID_HOME}/cmdline-tools/latest/ && \
+    rm -rf /tmp/cmdline-tools.zip /tmp/cmdline-tools-tmp
 
 # 接受 Android SDK 许可证并安装组件
 RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
