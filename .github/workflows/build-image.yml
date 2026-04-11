@@ -16,23 +16,23 @@ on:
       - '.github/workflows/build-image.yml'
       - 'config/**'
   schedule:
-    # ??    - cron: '0 2 * * 0'
+    - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       tag:
-        description: ''
+        description: 'Image tag'
         required: false
         default: 'latest'
       android_version:
-        description: 'Android SDK '
+        description: 'Android SDK version'
         required: false
         default: '34'
       ndk_version:
-        description: 'Android NDK '
+        description: 'Android NDK version'
         required: false
         default: 'r26'
       gradle_version:
-        description: 'Gradle '
+        description: 'Gradle version'
         required: false
         default: '8.5'
 
@@ -108,10 +108,8 @@ jobs:
       - name: Verify image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          # ?          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           docker pull $IMAGE_TAG
-          
-          # 
           docker run --rm $IMAGE_TAG java -version
           docker run --rm $IMAGE_TAG gradle --version
           docker run --rm $IMAGE_TAG ccache --version
@@ -121,7 +119,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     container:
-      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      image: ghcr.io/${{ github.repository }}:latest
       options: --user root
 
     steps:
@@ -129,13 +127,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test environment
-        run: |
-          # 
-          ./scripts/verify-env.sh
+        run: ./scripts/verify-env.sh
 
       - name: Test basic commands
         run: |
-          # 
           java -version
           python3 --version
           git --version
@@ -145,22 +140,16 @@ jobs:
 
       - name: Test Android tools
         run: |
-          #  Android 
           sdkmanager --list | head -20
           echo "Android SDK installed at: $ANDROID_HOME"
           echo "Android NDK installed at: $ANDROID_NDK_HOME"
 
       - name: Test build capabilities
         run: |
-          # 
           mkdir -p /tmp/test-project
           cd /tmp/test-project
-          
-          #  Gradle 
           echo 'plugins { id "java" }' > build.gradle
           echo 'println "Gradle build test successful"' > build.gradle.kts 2>/dev/null || true
-          
-          # 
           if command -v javac &> /dev/null; then
             echo 'public class Test { public static void main(String[] args) { System.out.println("Java test successful"); } }' > Test.java
             javac Test.java
@@ -176,12 +165,12 @@ jobs:
       - name: Notify on success
         if: ${{ needs.build-and-push.result == 'success' && needs.test-image.result == 'success' }}
         run: |
-          echo "?Docker image built and tested successfully!"
+          echo "Docker image built and tested successfully!"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "Tags: ${{ steps.meta.outputs.tags }}"
 
       - name: Notify on failure
         if: ${{ needs.build-and-push.result == 'failure' || needs.test-image.result == 'failure' }}
         run: |
-          echo "?Docker image build or test failed!"
+          echo "Docker image build or test failed!"
           echo "Check the workflow logs for details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

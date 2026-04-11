@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       android_version:
-        description: 'Android '
+        description: 'Android version'
         required: true
         default: '14'
         type: choice
@@ -14,7 +14,7 @@ on:
           - '14'
           - '15'
       build_type:
-        description: ''
+        description: 'Build type'
         required: true
         default: 'app'
         type: choice
@@ -22,17 +22,17 @@ on:
           - 'app'
           - 'system'
       enable_cache:
-        description: ''
+        description: 'Enable build cache'
         required: false
         default: true
         type: boolean
       clean_build:
-        description: ''
+        description: 'Clean build'
         required: false
         default: false
         type: boolean
       upload_artifacts:
-        description: ''
+        description: 'Upload artifacts'
         required: false
         default: true
         type: boolean
@@ -47,7 +47,7 @@ jobs:
   android-build:
     runs-on: ubuntu-latest
     container:
-      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      image: ghcr.io/${{ github.repository }}:latest
       options: --user root
       volumes:
         - /tmp/ccache:/ccache
@@ -60,13 +60,10 @@ jobs:
 
       - name: Setup environment
         run: |
-          # 
           echo "ANDROID_VERSION=${{ github.event.inputs.android_version }}" >> $GITHUB_ENV
           echo "BUILD_TYPE=${{ github.event.inputs.build_type }}" >> $GITHUB_ENV
           echo "ENABLE_CACHE=${{ github.event.inputs.enable_cache }}" >> $GITHUB_ENV
           echo "CLEAN_BUILD=${{ github.event.inputs.clean_build }}" >> $GITHUB_ENV
-          
-          # 
           echo "=== Build Environment ==="
           echo "Android Version: ${{ github.event.inputs.android_version }}"
           echo "Build Type: ${{ github.event.inputs.build_type }}"
@@ -95,16 +92,13 @@ jobs:
       - name: Setup ccache
         if: ${{ github.event.inputs.enable_cache }}
         run: |
-          #  ccache
           ccache -M 50G
           ccache -o compression=true
           ccache -o compression_level=6
           ccache -s
 
       - name: Verify build environment
-        run: |
-          # 
-          ./scripts/verify-env.sh
+        run: ./scripts/verify-env.sh
 
       - name: Clean build directory
         if: ${{ github.event.inputs.clean_build }}
@@ -118,17 +112,13 @@ jobs:
         run: |
           echo "Building Android Application for Android ${{ github.event.inputs.android_version }}..."
           
-          #  Android ?          if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
+          if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
             echo "Creating sample Android project..."
-            
-            # 
             mkdir -p app/src/main/java/com/example/app
             mkdir -p app/src/main/res/layout
             mkdir -p app/src/main/res/values
             
-            #  build.gradle 
             cat > build.gradle << 'EOF'
-            // Top-level build file
             buildscript {
                 repositories {
                     google()
@@ -138,29 +128,24 @@ jobs:
                     classpath 'com.android.tools.build:gradle:8.2.0'
                 }
             }
-            
             allprojects {
                 repositories {
                     google()
                     mavenCentral()
                 }
             }
-            
             task clean(type: Delete) {
                 delete rootProject.buildDir
             }
             EOF
             
-            #  app/build.gradle 
             cat > app/build.gradle << 'EOF'
             plugins {
                 id 'com.android.application'
             }
-            
             android {
                 namespace 'com.example.app'
                 compileSdk 34
-            
                 defaultConfig {
                     applicationId "com.example.app"
                     minSdk 24
@@ -168,7 +153,6 @@ jobs:
                     versionCode 1
                     versionName "1.0"
                 }
-            
                 buildTypes {
                     release {
                         minifyEnabled false
@@ -180,7 +164,6 @@ jobs:
                     targetCompatibility JavaVersion.VERSION_17
                 }
             }
-            
             dependencies {
                 implementation 'androidx.appcompat:appcompat:1.6.1'
                 implementation 'com.google.android.material:material:1.10.0'
@@ -188,13 +171,10 @@ jobs:
             }
             EOF
             
-            #  MainActivity
             cat > app/src/main/java/com/example/app/MainActivity.java << 'EOF'
             package com.example.app;
-            
             import androidx.appcompat.app.AppCompatActivity;
             import android.os.Bundle;
-            
             public class MainActivity extends AppCompatActivity {
                 @Override
                 protected void onCreate(Bundle savedInstanceState) {
@@ -204,7 +184,6 @@ jobs:
             }
             EOF
             
-            # 
             cat > app/src/main/res/layout/activity_main.xml << 'EOF'
             <?xml version="1.0" encoding="utf-8"?>
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -214,7 +193,6 @@ jobs:
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 tools:context=".MainActivity">
-            
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -223,22 +201,18 @@ jobs:
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
-            
             </androidx.constraintlayout.widget.ConstraintLayout>
             EOF
             
-            #  strings.xml
             cat > app/src/main/res/values/strings.xml << 'EOF'
             <resources>
                 <string name="app_name">Android Build Test</string>
             </resources>
             EOF
             
-            #  AndroidManifest.xml
             cat > app/src/main/AndroidManifest.xml << 'EOF'
             <?xml version="1.0" encoding="utf-8"?>
             <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            
                 <application
                     android:allowBackup="true"
                     android:icon="@mipmap/ic_launcher"
@@ -255,13 +229,10 @@ jobs:
                         </intent-filter>
                     </activity>
                 </application>
-            
             </manifest>
             EOF
           fi
           
-          #  APK
-          echo "Building APK..."
           chmod +x gradlew 2>/dev/null || ./gradlew wrapper 2>/dev/null || true
           
           if [ -f "gradlew" ]; then
@@ -270,35 +241,32 @@ jobs:
             gradle assembleDebug --no-daemon --console=plain
           fi
           
-          # ?          if [ -d "app/build/outputs/apk" ]; then
-            echo "?APK built successfully!"
+          if [ -d "app/build/outputs/apk" ]; then
+            echo "APK built successfully!"
             find app/build/outputs/apk -name "*.apk" | head -5
           else
-            echo "  No APK found in app/build/outputs/apk"
+            echo "No APK found in app/build/outputs/apk"
           fi
 
       - name: Build Android System (AOSP)
         if: ${{ github.event.inputs.build_type == 'system' }}
         run: |
           echo "Building Android System (AOSP) for Android ${{ github.event.inputs.android_version }}..."
-          
-          #  AOSP ?          # 
           echo "This would build Android ${{ github.event.inputs.android_version }} AOSP"
           echo "For full AOSP build, you need to sync the source code first:"
           echo "  repo init -u https://android.googlesource.com/platform/manifest -b android-${{ github.event.inputs.android_version }}.0_r1"
           echo "  repo sync -j8"
           echo "  source build/envsetup.sh"
           echo "  lunch aosp_arm-eng"
-          echo "  make -j\$(nproc)"
+          echo "  make -j$(nproc)"
           
-          # 
           echo "Verifying AOSP build environment..."
           which make && make --version
           which ninja && ninja --version
           which java && java -version
           which python3 && python3 --version
           
-          echo "?AOSP build environment is ready!"
+          echo "AOSP build environment is ready!"
 
       - name: Save ccache cache
         if: ${{ github.event.inputs.enable_cache }}
@@ -341,10 +309,6 @@ jobs:
           echo "Clean Build: ${{ github.event.inputs.clean_build }}"
           echo "Status: ${{ job.status }}"
           echo "====================="
-          
-          # 
           echo "Build completed at: $(date)"
-          
-          # 
           echo "Disk usage:"
           df -h /ccache ~/.gradle 2>/dev/null || true
