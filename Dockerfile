@@ -1,26 +1,8 @@
 # ============================================
 # Android Build Docker Image
 # ============================================
-# 
-# 这是一个用于 Android 系统和应用程序编译的 Docker 镜像。
-# 基于 Ubuntu 24.04，包含完整的 Android 编译工具链。
-#
-# 构建参数:
-#   UBUNTU_VERSION: Ubuntu 版本 (默认: 24.04)
-#   JAVA_VERSION: Java 版本 (默认: 17)
-#   PYTHON_VERSION: Python 版本 (默认: 3.12)
-#   ANDROID_SDK_VERSION: Android SDK 版本 (默认: 34)
-#   ANDROID_NDK_VERSION: Android NDK 版本 (默认: r26)
-#   GRADLE_VERSION: Gradle 版本 (默认: 8.5)
-#
-# 使用示例:
-#   docker build -t android-build:latest .
-#   docker build --build-arg ANDROID_SDK_VERSION=33 -t android-build:33 .
-#
-# ============================================
+
 # 阶段 1: Builder - 安装所有构建工具
-# ============================================
-# 构建参数
 ARG UBUNTU_VERSION=24.04
 ARG JAVA_VERSION=17
 ARG PYTHON_VERSION=3.12
@@ -42,7 +24,7 @@ ENV ANDROID_NDK_HOME=/opt/android-ndk
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${GRADLE_HOME}/bin:/usr/local/bin:${PATH}"
 
-# 安装系统依赖
+# 安装系统依赖（用于构建阶段）
 RUN apt-get update && apt-get install -y \
     build-essential \
     openjdk-17-jdk \
@@ -116,9 +98,8 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # ============================================
-# 阶段 2: Runtime - 最终运行环境
+# 阶段 2: Runtime - 最终运行环境（在运行时安装 OpenJDK）
 # ============================================
-# 构建参数
 ARG UBUNTU_VERSION=24.04
 ARG JAVA_VERSION=17
 
@@ -138,21 +119,9 @@ ENV USE_CCACHE=1
 ENV CCACHE_EXEC=/usr/bin/ccache
 ENV PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${GRADLE_HOME}/bin:/usr/local/bin:${PATH}"
 
-# 从 builder 阶段复制必需文件
-COPY --from=builder /usr/lib/jvm /usr/lib/jvm
-COPY --from=builder /opt/android-sdk /opt/android-sdk
-COPY --from=builder /opt/android-ndk /opt/android-ndk
-COPY --from=builder /opt/gradle /opt/gradle
-COPY --from=builder /usr/local/bin/repo /usr/local/bin/repo
-COPY --from=builder /usr/bin/ccache /usr/bin/ccache
-COPY --from=builder /usr/bin/ninja /usr/bin/ninja
-COPY --from=builder /python_version.txt /python_version.txt
-# 动态复制 Python 文件
-COPY --from=builder /usr/lib/python3.12 /usr/lib/python3.12
-COPY --from=builder /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
-
-# 安装运行时依赖
+# 在 final 镜像中安装运行时依赖与 OpenJDK（避免复制 JDK 导致缺失配置）
 RUN apt-get update && apt-get install -y \
+    openjdk-17-jdk-headless \
     git \
     python3 \
     python3-pip \
@@ -163,7 +132,19 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     ccache \
     ninja-build \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# 从 builder 阶段复制构建产物（但不复制 /usr/lib/jvm）
+COPY --from=builder /opt/android-sdk /opt/android-sdk
+COPY --from=builder /opt/android-ndk /opt/android-ndk
+COPY --from=builder /opt/gradle /opt/gradle
+COPY --from=builder /usr/local/bin/repo /usr/local/bin/repo
+COPY --from=builder /usr/bin/ccache /usr/bin/ccache
+COPY --from=builder /usr/bin/ninja /usr/bin/ninja
+COPY --from=builder /python_version.txt /python_version.txt
+# 如果需要 Python 本地包，也可以复制（按需保留）
+COPY --from=builder /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
 
 # 创建工作目录和缓存目录
 RUN mkdir -p /workspace /ccache && \
