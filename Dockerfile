@@ -87,9 +87,12 @@ RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/ndk.zip https://dl.google.com/
     rm /tmp/ndk.zip
 
 # 安装 Gradle
-RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/gradle.zip https://downloads.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip && \
+RUN curl -f -L --retry 5 --retry-delay 10 -o /tmp/gradle.zip https://downloads.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip || \
+    curl -f -L --retry 5 --retry-delay 10 -o /tmp/gradle.zip https://downloads.gradle.org/distributions/gradle-8.10-bin.zip || \
+    curl -f -L --retry 5 --retry-delay 10 -o /tmp/gradle.zip https://downloads.gradle.org/distributions/gradle-8.9-bin.zip && \
     unzip /tmp/gradle.zip -d /opt && \
-    mv /opt/gradle-${GRADLE_VERSION} ${GRADLE_HOME} && \
+    GRADLE_DIR=$(ls -d /opt/gradle-*) && \
+    mv $GRADLE_DIR ${GRADLE_HOME} && \
     rm /tmp/gradle.zip
 
 # 安装 repo 工具
