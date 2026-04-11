@@ -70,6 +70,13 @@ jobs:
           push: false
           tags: |
             local-build:latest
+          build-args: |
+            UBUNTU_VERSION=24.04
+            JAVA_VERSION=17
+            PYTHON_VERSION=3.12
+            ANDROID_SDK_VERSION=34
+            ANDROID_NDK_VERSION=r26
+            GRADLE_VERSION=8.5
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

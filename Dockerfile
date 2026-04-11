@@ -21,7 +21,7 @@
 # 阶段 1: Builder - 安装所有构建工具
 # ============================================
 # 构建参数
-ARG UBUNTU_VERSION=24.10
+ARG UBUNTU_VERSION=24.04
 ARG JAVA_VERSION=17
 ARG PYTHON_VERSION=3.12
 ARG ANDROID_SDK_VERSION=34

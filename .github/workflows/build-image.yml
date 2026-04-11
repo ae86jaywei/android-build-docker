@@ -84,6 +84,9 @@ jobs:
       - name: Set build arguments
         id: build-args
         run: |
+          echo "UBUNTU_VERSION=24.04" >> $GITHUB_OUTPUT
+          echo "JAVA_VERSION=17" >> $GITHUB_OUTPUT
+          echo "PYTHON_VERSION=3.12" >> $GITHUB_OUTPUT
           echo "ANDROID_SDK_VERSION=${{ github.event.inputs.android_version || '34' }}" >> $GITHUB_OUTPUT
           echo "ANDROID_NDK_VERSION=${{ github.event.inputs.ndk_version || 'r26' }}" >> $GITHUB_OUTPUT
           echo "GRADLE_VERSION=${{ github.event.inputs.gradle_version || '8.5' }}" >> $GITHUB_OUTPUT
@@ -97,6 +100,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            UBUNTU_VERSION=${{ steps.build-args.outputs.UBUNTU_VERSION }}
+            JAVA_VERSION=${{ steps.build-args.outputs.JAVA_VERSION }}
+            PYTHON_VERSION=${{ steps.build-args.outputs.PYTHON_VERSION }}
             ANDROID_SDK_VERSION=${{ steps.build-args.outputs.ANDROID_SDK_VERSION }}
             ANDROID_NDK_VERSION=${{ steps.build-args.outputs.ANDROID_NDK_VERSION }}
             GRADLE_VERSION=${{ steps.build-args.outputs.GRADLE_VERSION }}
