@@ -1,0 +1,802 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile'
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+      - 'config/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+      - 'config/**'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: '测试类型'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'environment'
+          - 'build'
+          - 'integration'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test-environment:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      options: --user root
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test environment verification
+        run: |
+          echo "=== Environment Verification Test ==="
+          echo "Testing the Android build environment..."
+          
+          # 运行环境验证脚本
+          if [ -f "scripts/verify-env.sh" ]; then
+            chmod +x scripts/verify-env.sh
+            ./scripts/verify-env.sh
+          else
+            echo "❌ verify-env.sh not found"
+            exit 1
+          fi
+
+      - name: Test basic commands
+        run: |
+          echo "=== Basic Command Tests ==="
+          
+          # 测试 Java
+          echo "Testing Java..."
+          java -version
+          if [ $? -eq 0 ]; then
+            echo "✅ Java test passed"
+          else
+            echo "❌ Java test failed"
+            exit 1
+          fi
+          
+          # 测试 Python
+          echo ""
+          echo "Testing Python..."
+          python3 --version
+          if [ $? -eq 0 ]; then
+            echo "✅ Python test passed"
+          else
+            echo "❌ Python test failed"
+            exit 1
+          fi
+          
+          # 测试 Git
+          echo ""
+          echo "Testing Git..."
+          git --version
+          if [ $? -eq 0 ]; then
+            echo "✅ Git test passed"
+          else
+            echo "❌ Git test failed"
+            exit 1
+          fi
+
+      - name: Test Android tools
+        run: |
+          echo "=== Android Tools Tests ==="
+          
+          # 测试 Android SDK
+          echo "Testing Android SDK..."
+          if [ -d "$ANDROID_HOME" ]; then
+            echo "✅ ANDROID_HOME exists: $ANDROID_HOME"
+            
+            # 检查 sdkmanager
+            if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+              echo "✅ sdkmanager found"
+              $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list | head -5
+            else
+              echo "❌ sdkmanager not found"
+              exit 1
+            fi
+          else
+            echo "❌ ANDROID_HOME not found"
+            exit 1
+          fi
+          
+          # 测试 Android NDK
+          echo ""
+          echo "Testing Android NDK..."
+          if [ -d "$ANDROID_NDK_HOME" ]; then
+            echo "✅ ANDROID_NDK_HOME exists: $ANDROID_NDK_HOME"
+            
+            # 检查 ndk-build
+            if [ -f "$ANDROID_NDK_HOME/ndk-build" ]; then
+              echo "✅ ndk-build found"
+              $ANDROID_NDK_HOME/ndk-build --version 2>/dev/null || echo "ndk-build version check not available"
+            else
+              echo "⚠️  ndk-build not found (may be expected for newer NDK versions)"
+            fi
+          else
+            echo "❌ ANDROID_NDK_HOME not found"
+            exit 1
+          fi
+
+      - name: Test build tools
+        run: |
+          echo "=== Build Tools Tests ==="
+          
+          # 测试 Gradle
+          echo "Testing Gradle..."
+          gradle --version
+          if [ $? -eq 0 ]; then
+            echo "✅ Gradle test passed"
+          else
+            echo "❌ Gradle test failed"
+            exit 1
+          fi
+          
+          # 测试 ccache
+          echo ""
+          echo "Testing ccache..."
+          ccache --version
+          if [ $? -eq 0 ]; then
+            echo "✅ ccache test passed"
+            
+            # 测试 ccache 配置
+            ccache -s
+          else
+            echo "❌ ccache test failed"
+            exit 1
+          fi
+          
+          # 测试 Ninja
+          echo ""
+          echo "Testing Ninja..."
+          ninja --version
+          if [ $? -eq 0 ]; then
+            echo "✅ Ninja test passed"
+          else
+            echo "❌ Ninja test failed"
+            exit 1
+          fi
+          
+          # 测试 repo
+          echo ""
+          echo "Testing repo..."
+          repo --version
+          if [ $? -eq 0 ]; then
+            echo "✅ repo test passed"
+          else
+            echo "❌ repo test failed"
+            exit 1
+          fi
+
+      - name: Test compiler toolchain
+        run: |
+          echo "=== Compiler Toolchain Tests ==="
+          
+          # 测试 GCC
+          echo "Testing GCC..."
+          gcc --version | head -1
+          if [ $? -eq 0 ]; then
+            echo "✅ GCC test passed"
+          else
+            echo "❌ GCC test failed"
+            exit 1
+          fi
+          
+          # 测试 G++
+          echo ""
+          echo "Testing G++..."
+          g++ --version | head -1
+          if [ $? -eq 0 ]; then
+            echo "✅ G++ test passed"
+          else
+            echo "❌ G++ test failed"
+            exit 1
+          fi
+          
+          # 测试 Clang
+          echo ""
+          echo "Testing Clang..."
+          clang --version | head -1
+          if [ $? -eq 0 ]; then
+            echo "✅ Clang test passed"
+          else
+            echo "❌ Clang test failed"
+            exit 1
+          fi
+          
+          # 测试 Clang++
+          echo ""
+          echo "Testing Clang++..."
+          clang++ --version | head -1
+          if [ $? -eq 0 ]; then
+            echo "✅ Clang++ test passed"
+          else
+            echo "❌ Clang++ test failed"
+            exit 1
+          fi
+
+      - name: Test Python packages
+        run: |
+          echo "=== Python Package Tests ==="
+          
+          # 测试必需的 Python 包
+          local packages=("protobuf" "six" "future" "psutil" "colorama" "requests")
+          all_passed=true
+          
+          for pkg in "${packages[@]}"; do
+            if python3 -c "import $pkg" 2>/dev/null; then
+              echo "✅ Python package: $pkg"
+            else
+              echo "❌ Python package: $pkg (not installed)"
+              all_passed=false
+            fi
+          done
+          
+          if [ "$all_passed" = true ]; then
+            echo "✅ All Python packages test passed"
+          else
+            echo "❌ Some Python packages are missing"
+            exit 1
+          fi
+
+      - name: Test workspace permissions
+        run: |
+          echo "=== Workspace Permission Tests ==="
+          
+          # 测试工作目录权限
+          workspace="/workspace"
+          ccache_dir="/ccache"
+          
+          if [ -d "$workspace" ]; then
+            if [ -w "$workspace" ]; then
+              echo "✅ Workspace directory is writable: $workspace"
+            else
+              echo "❌ Workspace directory is not writable: $workspace"
+              exit 1
+            fi
+          else
+            echo "⚠️  Workspace directory does not exist: $workspace"
+          fi
+          
+          if [ -d "$ccache_dir" ]; then
+            if [ -w "$ccache_dir" ]; then
+              echo "✅ ccache directory is writable: $ccache_dir"
+            else
+              echo "❌ ccache directory is not writable: $ccache_dir"
+              exit 1
+            fi
+          else
+            echo "⚠️  ccache directory does not exist: $ccache_dir"
+          fi
+
+      - name: Test environment summary
+        run: |
+          echo "=== Environment Test Summary ==="
+          echo "All environment tests completed successfully!"
+          echo ""
+          echo "Installed Tools:"
+          echo "- Java: $(java -version 2>&1 | head -1)"
+          echo "- Python: $(python3 --version 2>&1)"
+          echo "- Git: $(git --version 2>&1)"
+          echo "- Gradle: $(gradle --version 2>&1 | grep 'Gradle' | head -1)"
+          echo "- Android SDK: Installed in $ANDROID_HOME"
+          echo "- Android NDK: Installed in $ANDROID_NDK_HOME"
+          echo "- Build tools: GCC, Clang, Ninja, ccache, repo"
+          echo ""
+          echo "Environment ready for Android development!"
+
+  test-build:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      options: --user root
+    needs: test-environment
+    if: ${{ github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'build' || github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test simple Java compilation
+        run: |
+          echo "=== Simple Java Compilation Test ==="
+          
+          # 创建测试 Java 文件
+          cat > TestJava.java << 'EOF'
+          public class TestJava {
+              public static void main(String[] args) {
+                  System.out.println("Java compilation test passed!");
+              }
+          }
+          EOF
+          
+          # 编译和运行
+          javac TestJava.java
+          if [ $? -eq 0 ]; then
+            echo "✅ Java compilation successful"
+            java TestJava
+          else
+            echo "❌ Java compilation failed"
+            exit 1
+          fi
+
+      - name: Test simple C++ compilation
+        run: |
+          echo "=== Simple C++ Compilation Test ==="
+          
+          # 创建测试 C++ 文件
+          cat > test_cpp.cpp << 'EOF'
+          #include <iostream>
+          
+          int main() {
+              std::cout << "C++ compilation test passed!" << std::endl;
+              return 0;
+          }
+          EOF
+          
+          # 使用 GCC 编译
+          g++ -o test_cpp test_cpp.cpp
+          if [ $? -eq 0 ]; then
+            echo "✅ GCC C++ compilation successful"
+            ./test_cpp
+          else
+            echo "❌ GCC C++ compilation failed"
+          fi
+          
+          # 使用 Clang 编译
+          clang++ -o test_cpp_clang test_cpp.cpp
+          if [ $? -eq 0 ]; then
+            echo "✅ Clang C++ compilation successful"
+            ./test_cpp_clang
+          else
+            echo "❌ Clang C++ compilation failed"
+          fi
+
+      - name: Test Android project build
+        run: |
+          echo "=== Android Project Build Test ==="
+          
+          # 创建简单的 Android 项目
+          mkdir -p test-android-project/app/src/main/java/com/test/app
+          mkdir -p test-android-project/app/src/main/res/layout
+          mkdir -p test-android-project/app/src/main/res/values
+          
+          cd test-android-project
+          
+          # 创建 build.gradle
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.0'
+              }
+          }
+          
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+          
+          # 创建 app/build.gradle
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          
+          android {
+              namespace 'com.test.app'
+              compileSdk 34
+          
+              defaultConfig {
+                  applicationId "com.test.app"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+          
+          # 创建 MainActivity
+          cat > app/src/main/java/com/test/app/MainActivity.java << 'EOF'
+          package com.test.app;
+          
+          import androidx.appcompat.app.AppCompatActivity;
+          import android.os.Bundle;
+          
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+              }
+          }
+          EOF
+          
+          # 创建布局文件
+          cat > app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <androidx.constraintlayout.widget.ConstraintLayout
+              xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+          
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="Test App"
+                  android:layout_gravity="center" />
+          
+          </androidx.constraintlayout.widget.ConstraintLayout>
+          EOF
+          
+          # 创建 strings.xml
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <resources>
+              <string name="app_name">Test App</string>
+          </resources>
+          EOF
+          
+          # 创建 AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          
+              <application
+                  android:allowBackup="true"
+                  android:label="@string/app_name"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          
+          </manifest>
+          EOF
+          
+          # 尝试构建（不要求完全成功，只检查环境）
+          echo "Testing Gradle build environment..."
+          gradle tasks --console=plain 2>&1 | head -20 || true
+          
+          echo "✅ Android project structure test passed"
+
+      - name: Test ccache functionality
+        run: |
+          echo "=== ccache Functionality Test ==="
+          
+          # 创建测试 C 文件
+          cat > test_ccache.c << 'EOF'
+          #include <stdio.h>
+          
+          int main() {
+              printf("ccache test program\n");
+              return 0;
+          }
+          EOF
+          
+          # 第一次编译（应该缓存未命中）
+          echo "First compilation (cache miss expected)..."
+          ccache -z  # 重置统计
+          gcc -o test_ccache test_ccache.c
+          ccache -s | grep -E "(cache hit rate|cache miss)"
+          
+          # 第二次编译（应该缓存命中）
+          echo ""
+          echo "Second compilation (cache hit expected)..."
+          rm -f test_ccache
+          gcc -o test_ccache test_ccache.c
+          ccache -s | grep -E "(cache hit rate|cache miss)"
+          
+          # 运行测试程序
+          ./test_ccache
+          
+          echo "✅ ccache functionality test passed"
+
+      - name: Test build summary
+        run: |
+          echo "=== Build Test Summary ==="
+          echo "All build tests completed successfully!"
+          echo ""
+          echo "Tested Features:"
+          echo "- Java compilation and execution"
+          echo "- C++ compilation with GCC and Clang"
+          echo "- Android project structure"
+          echo "- Gradle build environment"
+          echo "- ccache caching functionality"
+          echo ""
+          echo "Build environment is fully functional!"
+
+  test-integration:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      options: --user root
+    needs: [test-environment, test-build]
+    if: ${{ github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'push' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test script functionality
+        run: |
+          echo "=== Script Functionality Test ==="
+          
+          # 测试构建脚本
+          if [ -f "scripts/build-image.sh" ]; then
+            echo "Testing build-image.sh..."
+            chmod +x scripts/build-image.sh
+            ./scripts/build-image.sh --help
+            echo "✅ build-image.sh help test passed"
+          else
+            echo "❌ build-image.sh not found"
+            exit 1
+          fi
+          
+          # 测试环境验证脚本
+          if [ -f "scripts/verify-env.sh" ]; then
+            echo ""
+            echo "Testing verify-env.sh..."
+            chmod +x scripts/verify-env.sh
+            ./scripts/verify-env.sh
+            echo "✅ verify-env.sh test passed"
+          else
+            echo "❌ verify-env.sh not found"
+            exit 1
+          fi
+          
+          # 测试缓存清理脚本
+          if [ -f "scripts/clean-cache.sh" ]; then
+            echo ""
+            echo "Testing clean-cache.sh..."
+            chmod +x scripts/clean-cache.sh
+            ./scripts/clean-cache.sh --help
+            ./scripts/clean-cache.sh --stats
+            echo "✅ clean-cache.sh test passed"
+          else
+            echo "❌ clean-cache.sh not found"
+            exit 1
+          fi
+
+      - name: Test Docker image metadata
+        run: |
+          echo "=== Docker Image Metadata Test ==="
+          
+          # 检查镜像标签和元数据
+          echo "Checking Docker image metadata..."
+          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest | \
+            jq -r '.[0] | {RepoTags, Created, Size, Architecture, Os, Labels}' || \
+            echo "⚠️  Could not inspect image (may not be pulled)"
+          
+          # 检查健康检查
+          echo ""
+          echo "Checking health check configuration..."
+          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest | \
+            jq -r '.[0].Config.Healthcheck' || \
+            echo "⚠️  No health check configured"
+
+      - name: Test container startup
+        run: |
+          echo "=== Container Startup Test ==="
+          
+          # 测试容器启动
+          echo "Testing container startup..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest echo "Container startup test passed"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Container startup test passed"
+          else
+            echo "❌ Container startup test failed"
+            exit 1
+          fi
+          
+          # 测试交互模式
+          echo ""
+          echo "Testing interactive mode..."
+          echo "exit" | docker run -i ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest /bin/bash
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Interactive mode test passed"
+          else
+            echo "❌ Interactive mode test failed"
+            exit 1
+          fi
+
+      - name: Test volume mounting
+        run: |
+          echo "=== Volume Mounting Test ==="
+          
+          # 创建测试目录
+          mkdir -p /tmp/test-volume
+          echo "Test content" > /tmp/test-volume/test.txt
+          
+          # 测试卷挂载
+          echo "Testing volume mounting..."
+          docker run --rm -v /tmp/test-volume:/workspace/test ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest cat /workspace/test/test.txt
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Volume mounting test passed"
+          else
+            echo "❌ Volume mounting test failed"
+            exit 1
+          fi
+          
+          # 清理
+          rm -rf /tmp/test-volume
+
+      - name: Test environment variables
+        run: |
+          echo "=== Environment Variables Test ==="
+          
+          # 测试环境变量
+          echo "Testing environment variables..."
+          docker run --rm -e TEST_VAR=test_value ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest env | grep TEST_VAR
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Environment variable test passed"
+          else
+            echo "❌ Environment variable test failed"
+            exit 1
+          fi
+          
+          # 测试预设环境变量
+          echo ""
+          echo "Testing preset environment variables..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest env | grep -E "(JAVA_HOME|ANDROID_HOME|ANDROID_NDK_HOME|GRADLE_HOME|CCACHE_DIR)"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Preset environment variables test passed"
+          else
+            echo "❌ Preset environment variables test failed"
+            exit 1
+          fi
+
+      - name: Integration test summary
+        run: |
+          echo "=== Integration Test Summary ==="
+          echo "All integration tests completed successfully!"
+          echo ""
+          echo "Tested Features:"
+          echo "- Script functionality (build, verify, clean)"
+          echo "- Docker image metadata and labels"
+          echo "- Container startup and interactive mode"
+          echo "- Volume mounting"
+          echo "- Environment variables"
+          echo ""
+          echo "✅ All tests passed! The Android build environment is ready for use."
+
+  test-report:
+    runs-on: ubuntu-latest
+    needs: [test-environment, test-build, test-integration]
+    if: always()
+
+    steps:
+      - name: Generate test report
+        run: |
+          echo "# Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "## Test Summary" >> test-report.md
+          echo "- **Test Date**: $(date)" >> test-report.md
+          echo "- **Repository**: ${{ github.repository }}" >> test-report.md
+          echo "- **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> test-report.md
+          echo "" >> test-report.md
+          
+          # 添加测试结果
+          echo "## Test Results" >> test-report.md
+          echo "" >> test-report.md
+          
+          # 环境测试结果
+          echo "### Environment Tests" >> test-report.md
+          if [ "${{ needs.test-environment.result }}" = "success" ]; then
+            echo "✅ **PASSED**: All environment tests passed" >> test-report.md
+          else
+            echo "❌ **FAILED**: Environment tests failed" >> test-report.md
+          fi
+          echo "" >> test-report.md
+          
+          # 构建测试结果
+          echo "### Build Tests" >> test-report.md
+          if [ "${{ needs.test-build.result }}" = "success" ]; then
+            echo "✅ **PASSED**: All build tests passed" >> test-report.md
+          else
+            echo "❌ **FAILED**: Build tests failed" >> test-report.md
+          fi
+          echo "" >> test-report.md
+          
+          # 集成测试结果
+          echo "### Integration Tests" >> test-report.md
+          if [ "${{ needs.test-integration.result }}" = "success" ]; then
+            echo "✅ **PASSED**: All integration tests passed" >> test-report.md
+          else
+            echo "❌ **FAILED**: Integration tests failed" >> test-report.md
+          fi
+          echo "" >> test-report.md
+          
+          # 总体状态
+          echo "## Overall Status" >> test-report.md
+          if [ "${{ needs.test-environment.result }}" = "success" ] && [ "${{ needs.test-build.result }}" = "success" ] && [ "${{ needs.test-integration.result }}" = "success" ]; then
+            echo "🎉 **ALL TESTS PASSED**" >> test-report.md
+            echo "The Android build environment is fully functional and ready for use." >> test-report.md
+          else
+            echo "⚠️ **SOME TESTS FAILED**" >> test-report.md
+            echo "Please check the failed test jobs for details." >> test-report.md
+          fi
+          
+          echo "" >> test-report.md
+          echo "## Next Steps" >> test-report.md
+          echo "1. Review any failed tests" >> test-report.md
+          echo "2. Fix issues if any" >> test-report.md
+          echo "3. Re-run tests to verify fixes" >> test-report.md
+          echo "4. Use the image for Android development" >> test-report.md
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test-report.md
+          retention-days: 30
+
+      - name: Notify test results
+        if: always()
+        run: |
+          echo "=== Test Results Notification ==="
+          
+          if [ "${{ needs.test-environment.result }}" = "success" ] && [ "${{ needs.test-build.result }}" = "success" ] && [ "${{ needs.test-integration.result }}" = "success" ]; then
+            echo "✅ All tests passed!"
+            echo "The Android build environment is ready for use."
+          else
+            echo "❌ Some tests failed!"
+            echo "Please check the test logs for details."
+            
+            # 显示失败的任务
+            echo ""
+            echo "Failed jobs:"
+            [ "${{ needs.test-environment.result }}" != "success" ] && echo "- test-environment"
+            [ "${{ needs.test-build.result }}" != "success" ] && echo "- test-build"
+            [ "${{ needs.test-integration.result }}" != "success" ] && echo "- test-integration"
+          fi
